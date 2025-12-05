@@ -20,6 +20,7 @@ def test_endpoints():
     # Create an appointment
     print("Creating appointment...")
     new_appointment = {
+        "doctor_name": "Dr. Soler",
         "patient_name": "John Doe",
         "date": "2023-10-27T10:00:00",
         "description": "General Checkup",
@@ -33,6 +34,7 @@ def test_endpoints():
     # Create an available appointment
     print("Creating available appointment...")
     avail_appointment = {
+        "doctor_name": "Dr. Soler",
         "patient_name": "Jane Smith",
         "date": "2023-10-28T11:00:00",
         "description": "Dental Cleaning",

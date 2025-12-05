@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 class AppointmentBase(BaseModel):
+    doctor_name: str
     patient_name: str
     date: datetime
     description: Optional[str] = None
