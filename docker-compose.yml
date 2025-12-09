@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -8,16 +6,40 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgresql://user:password@db/dr_soler_db
+      - DATABASE_URL=${DATABASE_URL}
 
   db:
     image: postgres:13
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=dr_soler_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+
+  scheduler:
+    build: .
+    command: python -u -m app.scheduler_service
+    environment:
+      - HOST_AGENT_URL=http://host_agent:8001
+      - ROBOT_NAME=${ROBOT_NAME}
+      - INTERVAL_SECONDS=${INTERVAL_SECONDS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/app
+    depends_on:
+      - host_agent
+
+  host_agent:
+    build: .
+    command: python -u host_agent.py
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/code
+    environment:
+      - HOST_AGENT_URL=http://host_agent:8001
 
 volumes:
   postgres_data:
