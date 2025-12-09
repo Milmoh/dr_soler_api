@@ -12,10 +12,22 @@ services:
     image: postgres:13
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5433:5432"
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+
+  host_agent:
+    build: .
+    command: python -u host_agent.py
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/code
+    environment:
+      - HOST_AGENT_URL=http://host_agent:8001
 
   scheduler:
     build: .
@@ -30,16 +42,6 @@ services:
       - .:/app
     depends_on:
       - host_agent
-
-  host_agent:
-    build: .
-    command: python -u host_agent.py
-    ports:
-      - "8001:8001"
-    volumes:
-      - .:/code
-    environment:
-      - HOST_AGENT_URL=http://host_agent:8001
 
 volumes:
   postgres_data:
