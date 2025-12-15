@@ -14,13 +14,21 @@ logger = logging.getLogger("scheduler_service")
 HOST_AGENT_URL = os.getenv("HOST_AGENT_URL", "http://host.docker.internal:8001")
 ROBOT_NAME = os.getenv("ROBOT_NAME", "robot_listar_citas")
 INTERVAL_SECONDS = int(os.getenv("INTERVAL_SECONDS", 300)) # 5 minutes default
+API_BEARER_TOKEN = os.getenv("API_BEARER_TOKEN")
 
 def trigger_robot():
     url = f"{HOST_AGENT_URL}/run-robot/{ROBOT_NAME}"
     logger.info(f"Triggering robot at {url}")
     
+    headers = {}
+    if API_BEARER_TOKEN:
+        headers["Authorization"] = f"Bearer {API_BEARER_TOKEN}"
+    else:
+        logger.warning("API_BEARER_TOKEN not set. Request might fail if host agent is secured.")
+
     try:
-        response = requests.post(url, timeout=5)
+        # Timeout increased to 10 minutes (600s) to wait for robot completion
+        response = requests.post(url, timeout=600, headers=headers)
         if response.status_code == 200:
             logger.info(f"Successfully triggered robot: {response.json()}")
         else:

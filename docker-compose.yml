@@ -7,6 +7,7 @@ services:
       - db
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - API_BEARER_TOKEN=${API_BEARER_TOKEN}
 
   db:
     image: postgres:13
@@ -19,29 +20,34 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
 
-  host_agent:
-    build: .
-    command: python -u host_agent.py
-    ports:
-      - "8001:8001"
-    volumes:
-      - .:/code
+  pgadmin:
+    image: dpage/pgadmin4
     environment:
-      - HOST_AGENT_URL=http://host_agent:8001
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+  # host_agent service removed. Run 'python host_agent.py' manually on Windows.
 
   scheduler:
     build: .
     command: python -u -m app.scheduler_service
     environment:
-      - HOST_AGENT_URL=http://host_agent:8001
-      - ROBOT_NAME=${ROBOT_NAME}
+      # Point to the host machine's loopback address via the gateway
+      - HOST_AGENT_URL=http://host.docker.internal:8001
+      # Force correct robot name matching the folder on disk
+      - ROBOT_NAME=listar_citas
       - INTERVAL_SECONDS=${INTERVAL_SECONDS}
+      - API_BEARER_TOKEN=${API_BEARER_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - .:/code
     depends_on:
-      - host_agent
+      - db
 
 volumes:
   postgres_data:

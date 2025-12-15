@@ -1,0 +1,8 @@
+2025-12-12 10:44:05,970 - INFO - Error: Please set RDP_HOST, USER, and PASSWORD in .env file.
+2025-12-12 10:44:05,971 - INFO - Error: Missing arguments
+2025-12-12 10:44:05,971 - INFO - 
+Usage:
+2025-12-12 10:44:05,972 - INFO -  python main.py "PATIENT_NAME" "DOCTOR_NAME" "ISO_TIME" [SPECIALTY] [TIPO_CONSULTA]
+2025-12-12 10:44:05,972 - INFO - 
+Example:
+2025-12-12 10:44:05,972 - INFO -  python main.py "Temporal Coelho, Artur" "Dr. Soler" "2025-03-22T14:30:00" "Oftalmologia" "C - Consulta Nuevo Paciente"
