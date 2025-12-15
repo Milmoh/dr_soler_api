@@ -1,11 +1,18 @@
 import requests
 import time
+import os
 
 BASE_URL = "http://localhost:8000"
+TOKEN = os.getenv("API_BEARER_TOKEN") # Match your .env default or actual value
+
+HEADERS = {
+    "Authorization": f"Bearer {TOKEN}"
+}
 
 def wait_for_api():
     for _ in range(30):
         try:
+            # Docs page might be public, but let's check a secured endpoint lightly or just connection
             response = requests.get(f"{BASE_URL}/docs")
             if response.status_code == 200:
                 print("API is up!")
@@ -22,51 +29,28 @@ def test_endpoints():
     new_appointment = {
         "doctor_name": "Dr. Soler",
         "patient_name": "John Doe",
-        "date": "2023-10-27T10:00:00",
-        "description": "General Checkup",
-        "is_available": False
+        "start_time": "2025-12-25T10:00:00",
+        "agenda": "General Checkup"
     }
-    response = requests.post(f"{BASE_URL}/appointments/", json=new_appointment)
+    response = requests.post(f"{BASE_URL}/appointments/", json=new_appointment, headers=HEADERS)
+    if response.status_code != 200:
+        print(f"Failed to create: {response.status_code} - {response.text}")
     assert response.status_code == 200
     created_appt = response.json()
     print(f"Created: {created_appt}")
 
-    # Create an available appointment
-    print("Creating available appointment...")
-    avail_appointment = {
-        "doctor_name": "Dr. Soler",
-        "patient_name": "Jane Smith",
-        "date": "2023-10-28T11:00:00",
-        "description": "Dental Cleaning",
-        "is_available": True
-    }
-    response = requests.post(f"{BASE_URL}/appointments/", json=avail_appointment)
-    assert response.status_code == 200
-    print(f"Created available: {response.json()}")
-
     # List all appointments
     print("Listing all appointments...")
-    response = requests.get(f"{BASE_URL}/appointments/")
+    response = requests.get(f"{BASE_URL}/appointments/", headers=HEADERS)
     assert response.status_code == 200
     all_appts = response.json()
     print(f"All appointments: {len(all_appts)}")
-    assert len(all_appts) >= 2
-
-    # List available appointments
-    print("Listing available appointments...")
-    response = requests.get(f"{BASE_URL}/appointments/available/")
-    assert response.status_code == 200
-    avail_appts = response.json()
-    print(f"Available appointments: {len(avail_appts)}")
-    # Should be at least 1 (the one we just created)
-    assert len(avail_appts) >= 1
-    for appt in avail_appts:
-        assert appt['is_available'] == True
+    assert len(all_appts) >= 1
 
     # Get specific appointment
     print("Getting specific appointment...")
     appt_id = created_appt['id']
-    response = requests.get(f"{BASE_URL}/appointments/{appt_id}")
+    response = requests.get(f"{BASE_URL}/appointments/{appt_id}", headers=HEADERS)
     assert response.status_code == 200
     fetched_appt = response.json()
     assert fetched_appt['id'] == appt_id

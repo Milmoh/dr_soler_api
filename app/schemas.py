@@ -13,7 +13,7 @@ class AppointmentBase(BaseModel):
 
 class AppointmentCreate(AppointmentBase):
     end_time: Optional[datetime] = None
-    trigger_robot: bool = False # set to True to execute the RPA robot immediately
+    trigger_robot: bool = True # set to True to execute the RPA robot immediately
 
 class Appointment(AppointmentBase):
     id: int

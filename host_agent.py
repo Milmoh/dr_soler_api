@@ -121,9 +121,27 @@ async def run_robot(robot_name: str, request: RobotRequest = None):
             else:
                 cmd = [sys.executable, script_path]
 
-            # Pass payload as JSON string argument if provided
+            # Special handling for agendar_cita robot - expects individual arguments
             if request and request.payload:
-                cmd.append(json.dumps(request.payload))
+                if robot_name == "agendar_cita":
+                    # Extract fields in the order expected by the robot
+                    # agendar_cita.exe "patient_name" "agenda" "start_time" "speciality" "visit_type"
+                    payload = request.payload
+                    
+                    # Map the fields - note: we don't have speciality in DB, so we'll use agenda or a default
+                    patient_name = payload.get("patient_name", "")
+                    agenda = payload.get("agenda", "")
+                    start_time = payload.get("start_time", "")
+                    # Always use Oftalmologia as the speciality
+                    speciality = "Oftalmologia"
+                    visit_type = payload.get("visit_type", "")
+                    
+                    # Add arguments in order
+                    cmd.extend([patient_name, agenda, start_time, speciality, visit_type])
+                    logger.info(f"agendar_cita arguments: {[patient_name, agenda, start_time, speciality, visit_type]}")
+                else:
+                    # For other robots, pass as JSON string
+                    cmd.append(json.dumps(request.payload))
 
             logger.info(f"Executing command: {cmd}")
             

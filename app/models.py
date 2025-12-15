@@ -9,7 +9,6 @@ class Appointment(Base):
     patient_name = Column(String, index=True)
     start_time = Column(DateTime, index=True)
     end_time = Column(DateTime)
-    agenda = Column(String, nullable=True)  # Optico-Optometria
+    agenda = Column(String, nullable=True)  # Dr. Soler
     center = Column(String, nullable=True)  # Centro
     visit_type = Column(String, nullable=True)  # Tipo Visita
-

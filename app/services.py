@@ -1,6 +1,57 @@
 import os
 import requests
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, date
+
+def is_working_day(date_obj):
+    """
+    Check if a date is a working day (not weekend or Spanish holiday in Comunidad Valenciana).
+    Returns True if it's a working day, False otherwise.
+    """
+    # Check if weekend (Saturday=5, Sunday=6)
+    if date_obj.weekday() >= 5:
+        return False
+    
+    # Spanish National Holidays (fixed dates)
+    year = date_obj.year
+    national_holidays = [
+        date(year, 1, 1),   # Año Nuevo
+        date(year, 1, 6),   # Reyes Magos
+        date(year, 5, 1),   # Día del Trabajo
+        date(year, 8, 15),  # Asunción de la Virgen
+        date(year, 10, 12), # Fiesta Nacional de España
+        date(year, 11, 1),  # Todos los Santos
+        date(year, 12, 6),  # Día de la Constitución
+        date(year, 12, 8),  # Inmaculada Concepción
+        date(year, 12, 25), # Navidad
+    ]
+    
+    # Comunidad Valenciana specific holidays
+    cv_holidays = [
+        date(year, 3, 19),  # San José (Fallas)
+        date(year, 10, 9),  # Día de la Comunidad Valenciana
+    ]
+    
+    # Easter-based holidays (approximate - these change each year)
+    # For 2025-2026, adding common dates
+    easter_holidays_2025 = [
+        date(2025, 4, 17),  # Jueves Santo
+        date(2025, 4, 18),  # Viernes Santo
+        date(2025, 4, 21),  # Lunes de Pascua
+    ]
+    
+    easter_holidays_2026 = [
+        date(2026, 4, 2),   # Jueves Santo
+        date(2026, 4, 3),   # Viernes Santo
+        date(2026, 4, 6),   # Lunes de Pascua
+    ]
+    
+    all_holidays = national_holidays + cv_holidays
+    if year == 2025:
+        all_holidays.extend(easter_holidays_2025)
+    elif year == 2026:
+        all_holidays.extend(easter_holidays_2026)
+    
+    return date_obj not in all_holidays
 
 def execute_robot_task(appointment_data: dict, token: str):
     """

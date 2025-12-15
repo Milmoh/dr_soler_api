@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 from datetime import datetime, timedelta, time
-from typing import List
+from typing import List, Optional
 
 def get_appointment_by_doctor_and_time(db: Session, doctor_name: str, start_time: datetime):
     return db.query(models.Appointment).filter(
@@ -29,18 +29,26 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
 def get_appointments(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Appointment).offset(skip).limit(limit).all()
 
+
+
 def get_appointment(db: Session, appointment_id: int):
     return db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
 
-def get_appointments_for_day(db: Session, doctor_name: str, query_date: datetime.date):
-    day_start = datetime.combine(query_date, time.min)
-    day_end = datetime.combine(query_date, time.max)
+def get_appointments_for_range(db: Session, agenda: Optional[str], start_date: datetime.date, end_date: datetime.date):
     
-    return db.query(models.Appointment).filter(
-        models.Appointment.doctor_name == doctor_name,
-        models.Appointment.start_time >= day_start,
-        models.Appointment.start_time <= day_end
-    ).all()
+    # Combine dates with min/max times to cover full days
+    range_start = datetime.combine(start_date, time.min)
+    range_end = datetime.combine(end_date, time.max)
+    
+    query = db.query(models.Appointment).filter(
+        models.Appointment.start_time >= range_start,
+        models.Appointment.start_time <= range_end
+    )
+    
+    if agenda:
+        query = query.filter(models.Appointment.agenda == agenda)
+        
+    return query.all()
 
 def sync_appointments(db: Session, appointments: List[schemas.AppointmentCreate]):
     # 1. Determine Window
