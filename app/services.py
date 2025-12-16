@@ -103,6 +103,11 @@ def calculate_available_slots(date_obj, existing_appointments):
         possible_slots.append(current)
         current += slot_duration
 
+    # Filter out slots that have already passed (only for today)
+    now = datetime.now()
+    if date_obj == now.date():
+        possible_slots = [slot for slot in possible_slots if slot > now]
+
     # Create a set of occupied start times
     busy_times = {appt.start_time for appt in existing_appointments}
 
