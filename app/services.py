@@ -104,9 +104,12 @@ def calculate_available_slots(date_obj, existing_appointments):
         current += slot_duration
 
     # Filter out slots that have already passed (only for today)
-    now = datetime.now()
-    if date_obj == now.date():
-        possible_slots = [slot for slot in possible_slots if slot > now]
+    # The server/DB is in UTC (0), but the clinic is in UTC+1.
+    # We adjust the "now" time by adding 1 hour to match the local wall clock.
+    now_adjusted = datetime.now() + timedelta(hours=1)
+    
+    if date_obj == now_adjusted.date():
+        possible_slots = [slot for slot in possible_slots if slot > now_adjusted]
 
     # Create a set of occupied start times
     busy_times = {appt.start_time for appt in existing_appointments}
