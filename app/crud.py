@@ -31,6 +31,17 @@ def get_appointments(db: Session, skip: int = 0, limit: int = 100):
 
 
 
+
+def delete_appointment(db: Session, appointment_id: int):
+    """
+    Deletes an appointment by ID. Used for rollback if robot fails.
+    """
+    db_appointment = get_appointment(db, appointment_id)
+    if db_appointment:
+        db.delete(db_appointment)
+        db.commit()
+    return db_appointment
+
 def get_appointment(db: Session, appointment_id: int):
     return db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
 

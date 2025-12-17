@@ -9,6 +9,7 @@ import subprocess
 import os
 import sys
 import logging
+import threading
 
 try:
     from app.security import verify_token
@@ -40,8 +41,8 @@ if os.path.exists(ENV_FILE):
 
 app = FastAPI(dependencies=[Depends(verify_token)])
 
-# Global lock for serial execution
-robot_lock = asyncio.Lock()
+# Global lock for serial execution (threading.Lock for synchronous code)
+robot_lock = threading.Lock()
 
 class RobotRequest(BaseModel):
     payload: Optional[Dict[str, Any]] = None
@@ -82,7 +83,7 @@ def get_robot_env():
     return env
 
 @app.post("/run-robot/{robot_name}")
-async def run_robot(robot_name: str, request: RobotRequest = None):
+def run_robot(robot_name: str, request: RobotRequest = None):
     """
     Executes a robot script/executable.
     Ensures only one robot runs at a time using a global lock.
@@ -108,13 +109,10 @@ async def run_robot(robot_name: str, request: RobotRequest = None):
         raise HTTPException(status_code=404, detail=f"Robot '{robot_name}' not found")
 
     # Acquire lock to ensure serial execution
-    if robot_lock.locked():
-        logger.info(f"Robot execution locked. Waiting for other robots to finish...")
-
-    async with robot_lock:
+    logger.info(f"Attempting to acquire robot lock...")
+    with robot_lock:
+        logger.info(f"Lock acquired. Preparing to execute: {script_path}")
         try:
-            logger.info(f"Acquired lock. Preparing to execute: {script_path}")
-            
             cmd = []
             if script_path.endswith(".exe"):
                 cmd = [script_path]
@@ -145,22 +143,22 @@ async def run_robot(robot_name: str, request: RobotRequest = None):
 
             logger.info(f"Executing command: {cmd}")
             
-            # Use asyncio subprocess to invoke and wait
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+            # Use synchronous subprocess to invoke and wait
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 env=get_robot_env()
             )
             
-            stdout, stderr = await process.communicate()
+            stdout, stderr = process.communicate()
             
             if process.returncode != 0:
                 logger.error(f"Robot failed with code {process.returncode}")
                 logger.error(f"Stderr: {stderr.decode()}")
                 raise Exception(f"Robot failed: {stderr.decode()}")
 
-            logger.info(f"Robot finished successfully")
+            logger.info(f"Robot finished successfully. Releasing lock.")
             return {
                 "status": "completed", 
                 "robot": robot_name, 

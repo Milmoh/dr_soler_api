@@ -57,7 +57,7 @@ def execute_robot_task(appointment_data: dict, token: str):
     """
     Triggers the 'agendar_cita' robot on the Host Agent.
     """
-    host_agent_url = os.getenv("HOST_AGENT_URL", "http://host.docker.internal:8001")
+    host_agent_url = os.getenv("HOST_AGENT_URL", "http://localhost:8001")
     url = f"{host_agent_url}/run-robot/agendar_cita"
     
     headers = {"Authorization": f"Bearer {token}"}
@@ -69,11 +69,28 @@ def execute_robot_task(appointment_data: dict, token: str):
     
     try:
         print(f"Triggering robot at {url} with data: {appointment_data}")
-        # We use a long timeout just in case, but since this is bg task, it's fine.
+        # Use a long timeout to wait for robot completion
         response = requests.post(url, json=payload, headers=headers, timeout=600)
         print(f"Robot trigger response: {response.status_code} - {response.text}")
+        
+        if response.status_code != 200:
+             raise Exception(f"Robot execution failed with status {response.status_code}: {response.text}")
+
+        # Check for logical errors in the output even if status is 200
+        try:
+            resp_data = response.json()
+            output = resp_data.get("output", "")
+            # Check for error keywords in the robot's output
+            if "Error:" in output or "Exception:" in output:
+                 raise Exception(f"Robot reported error in output: {output}")
+        except ValueError:
+            # If response is not JSON, we can't check output, but status 200 means success for HTTP
+            pass
+
+
     except Exception as e:
         print(f"Failed to trigger robot: {e}")
+        raise e
 
 def calculate_available_slots(date_obj, existing_appointments):
     """

@@ -1,4 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, Security, BackgroundTasks, status
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -29,7 +33,6 @@ app = FastAPI(dependencies=[Depends(verify_token)])
 @app.post("/appointments/", response_model=schemas.Appointment)
 def create_appointment(
     appointment: schemas.AppointmentCreate, 
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     token: str = Depends(verify_token)
 ):
@@ -56,20 +59,31 @@ def create_appointment(
 
     # Trigger Robot if requested
     if trigger_robot:
-        print(f"DEBUG: Preparing to trigger robot...")
-        # Prepare payload
-        robot_payload = appointment.model_dump()
-        del robot_payload["trigger_robot"]
-        
-        # Serialize datetimes
-        if isinstance(robot_payload.get("start_time"), datetime):
-            robot_payload["start_time"] = robot_payload["start_time"].isoformat()
-        if isinstance(robot_payload.get("end_time"), datetime):
-            robot_payload["end_time"] = robot_payload["end_time"].isoformat()
-        
-        print(f"DEBUG: Adding robot task to background with payload: {robot_payload}")
-        background_tasks.add_task(services.execute_robot_task, robot_payload, token)
-        print(f"DEBUG: Robot task added to background tasks")
+        try:
+            print(f"DEBUG: Preparing to trigger robot...")
+            # Prepare payload
+            robot_payload = appointment.model_dump()
+            del robot_payload["trigger_robot"]
+            
+            # Serialize datetimes
+            if isinstance(robot_payload.get("start_time"), datetime):
+                robot_payload["start_time"] = robot_payload["start_time"].isoformat()
+            if isinstance(robot_payload.get("end_time"), datetime):
+                robot_payload["end_time"] = robot_payload["end_time"].isoformat()
+            
+            print(f"DEBUG: Triggering robot task synchronously with payload: {robot_payload}")
+            # Execute synchronously - this will wait for the robot to finish
+            services.execute_robot_task(robot_payload, token)
+            print(f"DEBUG: Robot task completed info")
+            
+        except Exception as e:
+            print(f"ERROR: Robot failed: {e}. Rolling back appointment {db_appointment.id}...")
+            # Rollback: Delete the appointment we just created so we don't have inconsistent state
+            crud.delete_appointment(db, db_appointment.id) 
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Robot execution failed: {str(e)}. Appointment was not created."
+            )
     else:
         print(f"DEBUG: Robot trigger NOT requested (trigger_robot={trigger_robot})")
 
