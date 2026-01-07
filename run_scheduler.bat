@@ -9,10 +9,8 @@ if not exist "venv" (
 
 call venv\Scripts\activate
 
-REM Set environment variables specific to local execution if not in .env
-REM These mirror the docker-compose environment for scheduler
+REM Set environment variables
 set HOST_AGENT_URL=http://localhost:8001
-REM ROBOT_NAME is likely in .env, but can be set here if needed
 
 echo Running Scheduler...
 python -u -m app.scheduler_service

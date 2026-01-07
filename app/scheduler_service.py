@@ -3,6 +3,7 @@ import requests
 import logging
 import os
 from dotenv import load_dotenv
+import subprocess
 
 load_dotenv()
 
@@ -14,12 +15,28 @@ logging.basicConfig(
 logger = logging.getLogger("scheduler_service")
 
 # Configuration
+QRES_PATH=r"C:\qres\QRes.exe"
 HOST_AGENT_URL = os.getenv("HOST_AGENT_URL", "http://host.docker.internal:8001")
 ROBOT_NAME = os.getenv("ROBOT_NAME", "robot_listar_citas")
 INTERVAL_SECONDS = int(os.getenv("INTERVAL_SECONDS", 300)) # 5 minutes default
 API_BEARER_TOKEN = os.getenv("API_BEARER_TOKEN")
 
+def force_resolution():
+    """Intenta forzar la resolución usando la ruta absoluta"""
+    try:
+        # Verificamos si existe en esa ruta específica
+        if os.path.exists(QRES_PATH):
+            logger.info(f"Ejecutando QRes desde: {QRES_PATH}")
+            # Ejecutamos usando la ruta completa
+            subprocess.run([QRES_PATH, "/x:1280", "/y:800"], check=False, stdout=subprocess.DEVNULL)
+        else:
+            logger.error(f"ERROR CRÍTICO: No encuentro QRes.exe en: {QRES_PATH}")
+            logger.error("Por favor revisa la ruta en el script.")
+    except Exception as e:
+        logger.error(f"Error al intentar cambiar resolución: {e}")
+
 def trigger_robot():
+    force_resolution()
     url = f"{HOST_AGENT_URL}/run-robot/{ROBOT_NAME}"
     logger.info(f"Triggering robot at {url}")
     
